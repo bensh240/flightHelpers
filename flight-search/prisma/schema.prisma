@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // קשרים
+  savedSearches SavedSearch[]
+  searchHistory SearchHistory[]
+  preferences   UserPreferences?
+
+  @@map("users")
+}
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  searchData  String   // JSON string של פרטי החיפוש
+  isFavorite  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // קשרים
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_searches")
+}
+
+model SearchHistory {
+  id         String   @id @default(cuid())
+  searchData String   // JSON string של פרטי החיפוש
+  results    String?  // JSON string של תוצאות החיפוש
+  createdAt  DateTime @default(now())
+
+  // קשרים
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("search_history")
+}
+
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  defaultCurrency       String   @default("USD")
+  preferredAirlines     String?  // JSON string של רשימת חברות תעופה
+  blockedAirlines       String?  // JSON string של רשימת חברות תעופה
+  preferredAirports     String?  // JSON string של רשימת שדות תעופה
+  maxBudget             Int?     @default(1000)
+  preferredSeatClass    String?  @default("economy")
+  notificationsEnabled  Boolean  @default(true)
+  emailNotifications    Boolean  @default(true)
+  language              String   @default("he")
+  theme                 String   @default("light")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // קשרים
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}

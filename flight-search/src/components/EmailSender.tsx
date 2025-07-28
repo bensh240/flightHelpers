@@ -62,12 +62,13 @@ export const EmailSender: React.FC<EmailSenderProps> = ({ searchCriteria, flight
 * **סוג טיול:** ${criteria.tripType === 'roundTrip' ? 'הלוך-חזור' : 'חד כיוונית'}
 * **שנת הטיסה:** ${new Date(criteria.departureDate).getFullYear()}
 
-### תאריכי הטיסה
-* **תאריך יציאה:** ${formatDate(criteria.departureDate)}
-${criteria.returnDate ? `* **תאריך חזרה:** ${formatDate(criteria.returnDate)}` : ''}
-* **גמישות תאריכים:** ±${criteria.dateFlexibility} ימים
-${criteria.tripDuration ? `* **משך השהייה:** ${criteria.tripDuration} ימים` : ''}
-${criteria.durationFlexibility ? `* **גמישות משך:** ±${criteria.durationFlexibility} ימים` : ''}
+       ### תאריכי הטיסה
+       ${criteria.departureDate ? `* **תאריך יציאה:** ${formatDate(criteria.departureDate)}` : ''}
+       ${criteria.departureMonth ? `* **חודש יציאה:** ${criteria.departureMonth}` : ''}
+       ${criteria.returnDate ? `* **תאריך חזרה:** ${formatDate(criteria.returnDate)}` : ''}
+       ${criteria.returnMonth ? `* **חודש חזרה:** ${criteria.returnMonth}` : ''}
+       ${criteria.tripDuration ? `* **משך השהייה:** ${criteria.tripDuration} ימים` : ''}
+       ${criteria.durationFlexibility ? `* **גמישות משך:** ±${criteria.durationFlexibility} ימים` : ''}
 
 ### אסטרטגיית החיפוש
 * **סוג טיסה:** ${getFlightTypeText(criteria.flightType)}

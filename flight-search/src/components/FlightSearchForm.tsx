@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { 
@@ -14,6 +14,7 @@ import {
 import { SearchCriteria, TripType, FlightType, WeekDay } from '../types/flight.types';
 import { popularDestinations, airlines } from '../data/mockFlights';
 import { useTranslation } from '../contexts/TranslationContext';
+import { InteractiveMap } from './InteractiveMap';
 
 interface FlightSearchFormProps {
   onSubmit: (data: SearchCriteria) => void;
@@ -40,6 +41,7 @@ const flightTypes: { value: FlightType; label: string; description: string }[] =
 export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, isLoading = false }) => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
+  const [showMap, setShowMap] = useState(false);
 
   
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<SearchCriteria>({
@@ -49,7 +51,8 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
       tripType: 'roundTrip',
       departureDate: '',
       returnDate: '',
-      dateFlexibility: 1,
+      departureMonth: '',
+      returnMonth: '',
       flightType: 'cheapest',
       maxBudget: 1000,
       tripDuration: 7,
@@ -66,7 +69,19 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
   });
 
   const watchedTripType = watch('tripType');
+  const watchedDepartureDate = watch('departureDate');
+  const watchedReturnDate = watch('returnDate');
 
+  // חישוב אוטומטי של משך הטיול
+  useEffect(() => {
+    if (watchedDepartureDate && watchedReturnDate && watchedTripType === 'roundTrip') {
+      const departure = new Date(watchedDepartureDate);
+      const returnDate = new Date(watchedReturnDate);
+      const diffTime = Math.abs(returnDate.getTime() - departure.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      setValue('tripDuration', diffDays);
+    }
+  }, [watchedDepartureDate, watchedReturnDate, watchedTripType, setValue]);
 
   const steps = [
     { id: 1, title: t('step.basic'), description: t('destination.placeholder') },
@@ -76,6 +91,48 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
   ];
 
   const nextStep = () => {
+    // וולידציה לפי השלב הנוכחי
+    if (currentStep === 1) {
+      // בדיקה שמוצא ויעד מלאים
+      const origin = watch('origin');
+      const destination = watch('destination');
+      if (!origin || !destination) {
+        alert('אנא מלא את המוצא והיעד');
+        return;
+      }
+    } else if (currentStep === 2) {
+      // בדיקה שתאריכים או חודשים מלאים ותאריך חזרה אחרי יציאה
+      const departureDate = watch('departureDate');
+      const departureMonth = watch('departureMonth');
+      const returnDate = watch('returnDate');
+      const returnMonth = watch('returnMonth');
+      const tripType = watch('tripType');
+      
+      // בדיקה שנבחר סוג תאריכים
+      if (!departureDate && !departureMonth) {
+        alert('אנא בחר סוג בחירת תאריכים');
+        return;
+      }
+      
+      // בדיקה שתאריך חזרה נבחר בטיול הלוך-חזור
+      if (tripType === 'roundTrip') {
+        if (departureDate && !returnDate) {
+          alert('אנא בחר תאריך חזרה');
+          return;
+        }
+        if (departureMonth && !returnMonth) {
+          alert('אנא בחר חודש חזרה');
+          return;
+        }
+      }
+      
+      // בדיקה שתאריך חזרה אחרי יציאה (רק אם שניהם תאריכים ספציפיים)
+      if (tripType === 'roundTrip' && returnDate && departureDate && new Date(returnDate) <= new Date(departureDate)) {
+        alert('תאריך חזרה חייב להיות אחרי תאריך יציאה');
+        return;
+      }
+    }
+    
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
@@ -187,12 +244,38 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
                     rules={{ required: t('required.destination') }}
                     render={({ field }) => (
                       <div className="relative">
-                        <input
-                          {...field}
-                          type="text"
-                          placeholder={t('destination.placeholder')}
-                          className="input-field"
-                        />
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            {...field}
+                            type="text"
+                            placeholder={t('destination.placeholder')}
+                            className="input-field flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowMap(!showMap)}
+                            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m-6 3l6-3" />
+                            </svg>
+                            {t('map')}
+                          </button>
+                        </div>
+                        
+                        {/* Interactive Map */}
+                        {showMap && (
+                          <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <InteractiveMap
+                              onCitySelect={(city) => {
+                                setValue('destination', city.name);
+                                setShowMap(false);
+                              }}
+                              selectedCity={field.value}
+                            />
+                          </div>
+                        )}
+                        
                         {/* Popular Destinations */}
                         <div className="mt-4">
                           <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{t('popular.destinations')}:</p>
@@ -242,7 +325,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
                               : 'border-slate-200 dark:border-slate-700 hover:border-primary-300'
                           }`}
                         >
-                          <div className="text-left">
+                          <div className="text-right">
                             <div className="font-medium">
                               {type === 'oneWay' ? t('one.way.only') : t('round.trip.only')}
                             </div>
@@ -266,84 +349,155 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
               animate={{ opacity: 1 }}
               className="space-y-6"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Departure Date */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    <Calendar className="inline w-4 h-4 mr-2" />
-                    {t('departure.date')}
-                  </label>
-                  <Controller
-                    name="departureDate"
-                    control={control}
-                    rules={{ required: t('required.departure.date') }}
-                    render={({ field }) => (
-                      <input
-                        {...field}
-                        type="date"
-                        min={new Date().toISOString().split('T')[0]}
-                        className="input-field"
-                      />
-                    )}
-                  />
-                  {errors.departureDate && (
-                    <p className="text-red-500 text-sm mt-1">{errors.departureDate.message}</p>
-                  )}
+                            {/* Date Selection Type */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  <Calendar className="inline w-4 h-4 mr-2" />
+                  {t('date.selection.type')}
+                </label>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue('departureDate', new Date().toISOString().split('T')[0]);
+                      setValue('departureMonth', '');
+                      setValue('returnDate', '');
+                      setValue('returnMonth', '');
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 text-right ${
+                      watch('departureDate') && !watch('departureMonth')
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-primary-300'
+                    }`}
+                  >
+                    <div className="font-medium">{t('specific.dates')}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">{t('specific.dates.description')}</div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue('departureDate', '');
+                      setValue('departureMonth', new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'));
+                      setValue('returnDate', '');
+                      setValue('returnMonth', '');
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 text-right ${
+                      watch('departureMonth') && !watch('departureDate')
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-primary-300'
+                    }`}
+                  >
+                    <div className="font-medium">{t('flexible.dates')}</div>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">{t('flexible.dates.description')}</div>
+                  </button>
                 </div>
+              </div>
 
-                {/* Return Date */}
-                {watchedTripType === 'roundTrip' && (
+              {/* Specific Dates */}
+              {watch('departureDate') && !watch('departureMonth') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Departure Date */}
                   <div>
-                                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    <Calendar className="inline w-4 h-4 mr-2" />
-                    {t('return.date')}
-                  </label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      <Calendar className="inline w-4 h-4 mr-2" />
+                      {t('departure.date')}
+                    </label>
                     <Controller
-                      name="returnDate"
+                      name="departureDate"
                       control={control}
-                      rules={{ required: watchedTripType === 'roundTrip' ? t('required.return.date') : false }}
+                      rules={{ required: t('required.departure.date') }}
                       render={({ field }) => (
                         <input
                           {...field}
                           type="date"
-                          min={watch('departureDate') || new Date().toISOString().split('T')[0]}
+                          min={new Date().toISOString().split('T')[0]}
                           className="input-field"
                         />
                       )}
                     />
-                    {errors.returnDate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.returnDate.message}</p>
+                    {errors.departureDate && (
+                      <p className="text-red-500 text-sm mt-1">{errors.departureDate.message}</p>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Date Flexibility */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  {t('date.flexibility')} (±{t('days')})
-                </label>
-                <Controller
-                  name="dateFlexibility"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <input
-                        {...field}
-                        type="range"
-                        min="0"
-                        max="7"
-                        className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                  {/* Return Date */}
+                  {watchedTripType === 'roundTrip' && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <Calendar className="inline w-4 h-4 mr-2" />
+                        {t('return.date')}
+                      </label>
+                      <Controller
+                        name="returnDate"
+                        control={control}
+                        rules={{ required: watchedTripType === 'roundTrip' ? t('required.return.date') : false }}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="date"
+                            min={watch('departureDate') || new Date().toISOString().split('T')[0]}
+                            className="input-field"
+                          />
+                        )}
                       />
-                      <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                        <span>{t('no.flexibility')}</span>
-                        <span>±{field.value} {t('days')}</span>
-                        <span>{t('max.flexibility')}</span>
-                      </div>
+                      {errors.returnDate && (
+                        <p className="text-red-500 text-sm mt-1">{errors.returnDate.message}</p>
+                      )}
                     </div>
                   )}
-                />
-              </div>
+                </div>
+              )}
+
+              {/* Flexible Dates */}
+              {watch('departureMonth') && !watch('departureDate') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Departure Month */}
+                  <div>
+                                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <Calendar className="inline w-4 h-4 mr-2" />
+                        {t('departure.month')}
+                      </label>
+                    <Controller
+                      name="departureMonth"
+                      control={control}
+                      render={({ field }) => (
+                        <input
+                          {...field}
+                          type="month"
+                          min={new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0')}
+                          className="input-field"
+                        />
+                      )}
+                    />
+                  </div>
+
+                  {/* Return Month */}
+                  {watchedTripType === 'roundTrip' && (
+                    <div>
+                                              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          <Calendar className="inline w-4 h-4 mr-2" />
+                          {t('return.month')}
+                        </label>
+                      <Controller
+                        name="returnMonth"
+                        control={control}
+                        render={({ field }) => (
+                          <input
+                            {...field}
+                            type="month"
+                            min={watch('departureMonth') || new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0')}
+                            className="input-field"
+                          />
+                        )}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+
             </motion.div>
           )}
 
@@ -487,72 +641,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
                 </div>
               </div>
 
-              {/* Airlines */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Preferred Airlines */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                    {t('preferred.airlines')}
-                  </label>
-                  <Controller
-                    name="preferredAirlines"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {airlines.map((airline) => (
-                          <label key={airline.code} className="flex items-center space-x-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={(field.value || []).includes(airline.code)}
-                              onChange={(e) => {
-                                const current = field.value || [];
-                                const newValue = e.target.checked
-                                  ? [...current, airline.code]
-                                  : current.filter(code => code !== airline.code);
-                                field.onChange(newValue);
-                              }}
-                              className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                            />
-                            <span className="text-sm">{airline.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  />
-                </div>
 
-                {/* Blocked Airlines */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                    {t('blocked.airlines')}
-                  </label>
-                  <Controller
-                    name="blockedAirlines"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {airlines.map((airline) => (
-                          <label key={airline.code} className="flex items-center space-x-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={(field.value || []).includes(airline.code)}
-                              onChange={(e) => {
-                                const current = field.value || [];
-                                const newValue = e.target.checked
-                                  ? [...current, airline.code]
-                                  : current.filter(code => code !== airline.code);
-                                field.onChange(newValue);
-                              }}
-                              className="rounded border-slate-300 text-red-600 focus:ring-red-500"
-                            />
-                            <span className="text-sm">{airline.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  />
-                </div>
-              </div>
 
               {/* Mixed Airlines */}
               <div>
@@ -563,7 +652,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
                   name="mixedAirlines"
                   control={control}
                   render={({ field }) => (
-                    <div className="flex space-x-4">
+                    <div className="flex space-x-4 space-x-reverse">
                       {[true, false].map((value) => (
                         <button
                           key={value.toString()}
@@ -593,7 +682,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
                   control={control}
                   render={({ field }) => (
                     <div className="space-y-4">
-                      <div className="flex space-x-4">
+                      <div className="flex space-x-4 space-x-reverse">
                         {[true, false].map((value) => (
                           <button
                             key={value.toString()}
@@ -645,7 +734,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
               disabled={currentStep === 1}
               className="flex items-center px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft className="w-4 h-4 ml-1" />
+              <ChevronRight className="w-4 h-4 ml-1" />
               {t('previous')}
             </button>
 
@@ -656,7 +745,7 @@ export const FlightSearchForm: React.FC<FlightSearchFormProps> = ({ onSubmit, is
                 className="btn-primary flex items-center"
               >
                 {t('next')}
-                <ChevronRight className="w-4 h-4 mr-1" />
+                <ChevronLeft className="w-4 h-4 mr-1" />
               </button>
             ) : (
               <button

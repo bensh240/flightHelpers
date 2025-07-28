@@ -15,7 +15,8 @@ export interface SearchCriteria {
   tripType: TripType;
   departureDate: string;
   returnDate?: string;
-  dateFlexibility: number;
+  departureMonth?: string;
+  returnMonth?: string;
   flightType: FlightType;
   maxBudget: number;
   tripDuration?: number;

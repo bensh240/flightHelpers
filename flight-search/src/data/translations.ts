@@ -70,6 +70,66 @@ export const translations: TranslationData = {
     he: 'תאריך חזרה',
     en: 'Return Date'
   },
+  'specific.date': {
+    he: 'תאריך ספציפי',
+    en: 'Specific Date'
+  },
+  'month': {
+    he: 'חודש',
+    en: 'Month'
+  },
+  'choose.type': {
+    he: 'בחר סוג',
+    en: 'Choose Type'
+  },
+  'date.selection.type': {
+    he: 'סוג בחירת תאריכים',
+    en: 'Date Selection Type'
+  },
+  'specific.dates': {
+    he: 'תאריכים ספציפיים',
+    en: 'Specific Dates'
+  },
+  'specific.dates.description': {
+    he: 'בחר תאריך יציאה וחזרה מדויקים',
+    en: 'Choose exact departure and return dates'
+  },
+  'flexible.dates': {
+    he: 'גמישות תאריכים',
+    en: 'Flexible Dates'
+  },
+  'flexible.dates.description': {
+    he: 'בחר חודש יציאה וחזרה',
+    en: 'Choose departure and return months'
+  },
+  'departure.month': {
+    he: 'חודש יציאה',
+    en: 'Departure Month'
+  },
+  'return.month': {
+    he: 'חודש חזרה',
+    en: 'Return Month'
+  },
+  'map': {
+    he: 'מפה',
+    en: 'Map'
+  },
+  'select.city': {
+    he: 'בחר עיר',
+    en: 'Select City'
+  },
+  'filter.by.region': {
+    he: 'סינון לפי אזור:',
+    en: 'Filter by Region:'
+  },
+  'all.cities': {
+    he: 'כל הערים',
+    en: 'All Cities'
+  },
+  'selected.city': {
+    he: 'עיר נבחרה:',
+    en: 'Selected City:'
+  },
   'date.flexibility': {
     he: 'גמישות תאריכים',
     en: 'Date Flexibility'
