@@ -91,7 +91,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Ben Shalom** - [bensh240](https://github.com/bensh240)
+**Ben Shaya** - [bensh240](https://github.com/bensh240)
 
 ## 🙏 Acknowledgments
 
