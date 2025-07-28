@@ -100,6 +100,14 @@ export const translations: TranslationData = {
     he: 'הזולה ביותר',
     en: 'Cheapest'
   },
+  'send.to.agent': {
+    he: 'שלח לסוכן חכם',
+    en: 'Send to Smart Agent'
+  },
+  'hide': {
+    he: 'הסתר',
+    en: 'Hide'
+  },
   'max.budget': {
     he: 'תקציב מקסימלי',
     en: 'Max Budget'

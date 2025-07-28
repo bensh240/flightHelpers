@@ -8,12 +8,14 @@ import {
   MapPin, 
   DollarSign,
   RefreshCw,
-  Calendar
+  Calendar,
+  Mail
 } from 'lucide-react';
 import { useTranslation } from '../contexts/TranslationContext';
 import { FlightResult, FilterOptions } from '../types/flight.types';
 import { FlightCard } from './FlightCard';
 import { FilterPanel } from './FilterPanel';
+import { EmailSender } from './EmailSender';
 
 
 interface FlightResultsProps {
@@ -32,6 +34,7 @@ export const FlightResults: React.FC<FlightResultsProps> = ({
 }) => {
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
+  const [showEmailSender, setShowEmailSender] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>('price');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filters, setFilters] = useState<FilterOptions>({
@@ -151,6 +154,19 @@ export const FlightResults: React.FC<FlightResultsProps> = ({
 
           {/* Controls */}
           <div className="flex items-center space-x-4 space-x-reverse">
+            {/* Email Agent Button */}
+            <button
+              onClick={() => setShowEmailSender(!showEmailSender)}
+              className={`flex items-center px-4 py-2 rounded-xl border-2 transition-all duration-300 ${
+                showEmailSender
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                  : 'border-slate-200 dark:border-slate-700 hover:border-primary-300'
+              }`}
+            >
+              <Mail className="w-4 h-4 ml-2" />
+              {showEmailSender ? t('hide') : t('send.to.agent')}
+            </button>
+            
             {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -239,6 +255,23 @@ export const FlightResults: React.FC<FlightResultsProps> = ({
           )}
         </div>
       </div>
+
+      {/* Email Agent Section */}
+      <AnimatePresence>
+        {showEmailSender && searchCriteria && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mt-8"
+          >
+            <EmailSender 
+              searchCriteria={searchCriteria}
+              flights={flights}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Search Criteria Summary */}
       {searchCriteria && (
